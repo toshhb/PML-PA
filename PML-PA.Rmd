@@ -1,0 +1,110 @@
+---
+output: html_document
+---
+# Prediction Assignment
+
+For the Practical Machine Learning class on Coursera in February 2015
+
+## Synopsis
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). 
+
+The goal of this project is to predict the manner in which they did the exercise. This is the `classe` variable in the training set. 
+
+This report describes how a prediction model was build, shows the results of using cross validation on it, shows the expected out of sample error, and explains the choices made. The prediction model will be used to predict the 20 test cases provided for this exercise.
+
+The data for this project come from the source above.
+
+## Data Processing
+
+We assume the [training data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv) and the 
+[test data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv) were loaded into the working directory.
+
+```{r data input}
+df.train <- read.csv("pml-training.csv")
+df.test <- read.csv("pml-testing.csv")
+```
+We want to predict for `df.test`, so we take a look at:
+```{r summary df.test}
+summary(df.test)
+```
+
+It would be useless to use predictors for which we have no values (i.e. `NA`s) in `df.test`.
+
+```{r picking predictors}
+# we only want to keep the columns that do not contain any NAs
+col2keep <- colMeans(!is.na(df.test))==1
+which(col2keep)
+```
+The columns 1:7 seem not to be of any value for predicting as their names suggest.
+```{r}
+col2keep[1:7]<-FALSE
+sum(col2keep)
+```
+Only `r sum(col2keep)` variables left.
+
+We make sure that the columns we selected match those of our training data.
+```{r}
+names.diff<-which(colnames(df.train) != colnames(df.test))
+c(colnames(df.train)[names.diff], colnames(df.test)[names.diff])
+```
+Our needed result indicator `classe` is still part of the training data, whereas `df.test` has a column ``r colnames(df.test)[names.diff]`` instead.
+
+Now we partition our dataset in training an testing partitions for later cross validation.
+```{r partion data}
+require(caret)
+inTrain <- createDataPartition(y=df.train$classe, p=.6, list=FALSE)
+training<-df.train[inTrain,col2keep]
+testing<-df.train[-inTrain,col2keep]
+# free memory
+rm(df.train)
+rm(inTrain)
+```
+
+## Training the model
+
+Throughout our course random forest models proved to gain the best results. Therefore we start, as kind of brute force, with  training a random forest on *all* variables which we kept so far. Unfortunately `train` from the caret packet with `method = "rf"` took quite a long time to train, so the `randomForest` package will be used directly.
+
+```{r training}
+require(randomForest)
+set.seed(22) # to make this reproducible
+#system.time(fit.rf <-train(classe~., data = training, method = "rf"))
+system.time(fit.rf <- randomForest(classe~., data=training))
+```
+
+A short summary of our model:
+```{r model summary}
+fit.rf
+```
+
+## Cross Validation
+
+Now we take our `testing` data from the partitioning to validate our model.
+
+```{r validation}
+confusionMatrix(predict(fit.rf, testing), testing$classe)
+```
+
+With an accuracy of more than 99.2% (i.e. an **expected out of sample error** of **less than 0.8%**) I am sure enough that a prediction for our 20 test cases is OK for submitting.
+
+With the run time of the model fitting and the accuracy of the model, I will refrain from trying to reduce the number of predictors by PCA or other means, what I intended to do when I started to work on this assignment.
+
+## Predicting the test cases
+
+To not give away the answers directly I will only show the code, not the results. (This is all public, but the instructors want us to make it public for grading. *It feels like we are urged to violate the honor code.*)
+
+```{r predict results}
+answers <- predict(fit.rf, df.test)
+
+# code from "Prediction Assignment Submission: Instructions"
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+pml_write_files(answers)
+```
+
