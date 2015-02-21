@@ -1,7 +1,7 @@
 # Practical Machine Learning - Prediction Assignment
 Peer Assessment / Prediction Assignment Write-up for the February 2015 run
 
-Deer Grader,
+Dear Grader,
 
 to ease your work here are direct links to the files of interest:
 
