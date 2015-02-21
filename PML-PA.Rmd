@@ -18,7 +18,7 @@ The data for this project come from the source above.
 ## Data Processing
 
 We assume the [training data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv) and the 
-[test data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv) were loaded into the working directory.
+[test data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv) were downloaded to the working directory.
 
 ```{r data input}
 df.train <- read.csv("pml-training.csv")
@@ -53,7 +53,8 @@ Our needed result indicator `classe` is still part of the training data, whereas
 Now we partition our dataset in training an testing partitions for later cross validation.
 ```{r partion data}
 require(caret)
-inTrain <- createDataPartition(y=df.train$classe, p=.6, list=FALSE)
+set.seed(22) # to make this reproducible
+inTrain <- createDataPartition(y=df.train$classe, p=.7, list=FALSE)
 training<-df.train[inTrain,col2keep]
 testing<-df.train[-inTrain,col2keep]
 # free memory
@@ -63,11 +64,11 @@ rm(inTrain)
 
 ## Training the model
 
-Throughout our course random forest models proved to gain the best results. Therefore we start, as kind of brute force, with  training a random forest on *all* variables which we kept so far. Unfortunately `train` from the caret packet with `method = "rf"` took quite a long time to train, so the `randomForest` package will be used directly.
+Throughout our course random forest models gained the best results. Therefore we start, as kind of brute force, with  training a random forest on *all* variables which we kept so far. Unfortunately `train` from the caret packet with `method = "rf"` took quite a long time to train, so the `randomForest` package will be used directly.
 
 ```{r training}
 require(randomForest)
-set.seed(22) # to make this reproducible
+set.seed(333) # to make this reproducible
 #system.time(fit.rf <-train(classe~., data = training, method = "rf"))
 system.time(fit.rf <- randomForest(classe~., data=training))
 ```
@@ -85,7 +86,7 @@ Now we take our `testing` data from the partitioning to validate our model.
 confusionMatrix(predict(fit.rf, testing), testing$classe)
 ```
 
-With an accuracy of more than 99.2% (i.e. an **expected out of sample error** of **less than 0.8%**) I am sure enough that a prediction for our 20 test cases is OK for submitting.
+With an accuracy of more than 99.3% (i.e. an **expected out of sample error** of **less than 0.7%**) I am sure enough that a prediction for our 20 test cases is OK for submitting.
 
 With the run time of the model fitting and the accuracy of the model, I will refrain from trying to reduce the number of predictors by PCA or other means, what I intended to do when I started to work on this assignment.
 

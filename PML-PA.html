@@ -64,7 +64,7 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 </div>
 <div id="data-processing" class="section level2">
 <h2>Data Processing</h2>
-<p>We assume the <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">training data</a> and the <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">test data</a> were loaded into the working directory.</p>
+<p>We assume the <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">training data</a> and the <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">test data</a> were downloaded to the working directory.</p>
 <pre class="r"><code>df.train &lt;- read.csv(&quot;pml-training.csv&quot;)
 df.test &lt;- read.csv(&quot;pml-testing.csv&quot;)</code></pre>
 <p>We want to predict for <code>df.test</code>, so we take a look at:</p>
@@ -472,7 +472,8 @@ c(colnames(df.train)[names.diff], colnames(df.test)[names.diff])</code></pre>
 <pre><code>## Loading required package: caret
 ## Loading required package: lattice
 ## Loading required package: ggplot2</code></pre>
-<pre class="r"><code>inTrain &lt;- createDataPartition(y=df.train$classe, p=.6, list=FALSE)
+<pre class="r"><code>set.seed(22) # to make this reproducible
+inTrain &lt;- createDataPartition(y=df.train$classe, p=.7, list=FALSE)
 training&lt;-df.train[inTrain,col2keep]
 testing&lt;-df.train[-inTrain,col2keep]
 # free memory
@@ -486,11 +487,11 @@ rm(inTrain)</code></pre>
 <pre><code>## Loading required package: randomForest
 ## randomForest 4.6-10
 ## Type rfNews() to see new features/changes/bug fixes.</code></pre>
-<pre class="r"><code>set.seed(22) # to make this reproducible
+<pre class="r"><code>set.seed(333) # to make this reproducible
 #system.time(fit.rf &lt;-train(classe~., data = training, method = &quot;rf&quot;))
 system.time(fit.rf &lt;- randomForest(classe~., data=training))</code></pre>
 <pre><code>##    user  system elapsed 
-## 104.395   0.868 105.815</code></pre>
+## 152.072   1.171 153.424</code></pre>
 <p>A short summary of our model:</p>
 <pre class="r"><code>fit.rf</code></pre>
 <pre><code>## 
@@ -500,14 +501,14 @@ system.time(fit.rf &lt;- randomForest(classe~., data=training))</code></pre>
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 7
 ## 
-##         OOB estimate of  error rate: 0.6%
+##         OOB estimate of  error rate: 0.52%
 ## Confusion matrix:
 ##      A    B    C    D    E class.error
-## A 3344    3    0    1    0 0.001194743
-## B   12 2263    4    0    0 0.007020623
-## C    0   12 2039    3    0 0.007302824
-## D    0    0   26 1903    1 0.013989637
-## E    0    0    3    6 2156 0.004157044</code></pre>
+## A 3902    3    0    1    0 0.001024066
+## B   16 2639    3    0    0 0.007148232
+## C    0   14 2378    4    0 0.007512521
+## D    0    0   23 2228    1 0.010657194
+## E    0    0    0    7 2518 0.002772277</code></pre>
 </div>
 <div id="cross-validation" class="section level2">
 <h2>Cross Validation</h2>
@@ -517,34 +518,34 @@ system.time(fit.rf &lt;- randomForest(classe~., data=training))</code></pre>
 ## 
 ##           Reference
 ## Prediction    A    B    C    D    E
-##          A 2227   10    0    0    0
-##          B    4 1503   11    0    0
-##          C    0    5 1351   17    3
-##          D    0    0    6 1266    1
-##          E    1    0    0    3 1438
+##          A 1669    7    0    0    0
+##          B    1 1128    4    0    0
+##          C    0    4 1022   15    0
+##          D    0    0    0  947    2
+##          E    4    0    0    2 1080
 ## 
 ## Overall Statistics
-##                                        
-##                Accuracy : 0.9922       
-##                  95% CI : (0.99, 0.994)
-##     No Information Rate : 0.2845       
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16    
-##                                        
-##                   Kappa : 0.9902       
-##  Mcnemar's Test P-Value : NA           
+##                                          
+##                Accuracy : 0.9934         
+##                  95% CI : (0.991, 0.9953)
+##     No Information Rate : 0.2845         
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
+##                                          
+##                   Kappa : 0.9916         
+##  Mcnemar's Test P-Value : NA             
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9978   0.9901   0.9876   0.9844   0.9972
-## Specificity            0.9982   0.9976   0.9961   0.9989   0.9994
-## Pos Pred Value         0.9955   0.9901   0.9818   0.9945   0.9972
-## Neg Pred Value         0.9991   0.9976   0.9974   0.9970   0.9994
-## Prevalence             0.2845   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2838   0.1916   0.1722   0.1614   0.1833
-## Detection Prevalence   0.2851   0.1935   0.1754   0.1622   0.1838
-## Balanced Accuracy      0.9980   0.9939   0.9919   0.9917   0.9983</code></pre>
-<p>With an accuracy of more than 99.2% (i.e. an <strong>expected out of sample error</strong> of <strong>less than 0.8%</strong>) I am sure enough that a prediction for our 20 test cases is OK for submitting.</p>
+## Sensitivity            0.9970   0.9903   0.9961   0.9824   0.9982
+## Specificity            0.9983   0.9989   0.9961   0.9996   0.9988
+## Pos Pred Value         0.9958   0.9956   0.9817   0.9979   0.9945
+## Neg Pred Value         0.9988   0.9977   0.9992   0.9966   0.9996
+## Prevalence             0.2845   0.1935   0.1743   0.1638   0.1839
+## Detection Rate         0.2836   0.1917   0.1737   0.1609   0.1835
+## Detection Prevalence   0.2848   0.1925   0.1769   0.1613   0.1845
+## Balanced Accuracy      0.9977   0.9946   0.9961   0.9910   0.9985</code></pre>
+<p>With an accuracy of more than 99.3% (i.e. an <strong>expected out of sample error</strong> of <strong>less than 0.7%</strong>) I am sure enough that a prediction for our 20 test cases is OK for submitting.</p>
 <p>With the run time of the model fitting and the accuracy of the model, I will refrain from trying to reduce the number of predictors by PCA or other means, what I intended to do when I started to work on this assignment.</p>
 </div>
 <div id="predicting-the-test-cases" class="section level2">
